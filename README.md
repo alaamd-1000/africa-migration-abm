@@ -1,50 +1,79 @@
-# Internal Migration Flow Simulation in NetLogo
+# Africa Internal Migration – Agent-Based Model (NetLogo)
 
-An agent-based simulation model built in **NetLogo** using internal migration flow data from `cleaned_migration_flows.csv`. The model represents geographical origins and destinations as weighted network nodes (`zones`), migration corridors as directed links (`PrdMIG`, `dist_km`, `mig_rate_per_1k`, `size_tier`), and migrating individuals as mobile agents (`migrants`) tracked over a 10-step (`Year`) horizon.
+An exploratory agent-based simulation of **internal migration across 46 African countries**, built in NetLogo from a dataset of 32,116 origin–destination flows between 971 zones.
 
-## Dataset Overview (`cleaned_migration_flows.csv`)
+![Simulation screenshot](images/screenshot.png)
 
-- **Total Migration Flows (Rows):** 32,116 directed origin–destination records
-- **Countries (`ISO`):** 46 countries (including top total flow contributors such as `NGA`, `UGA`, `KEN`, `CMR`, and `SEN`)
-- **Geographical Zones:** 971 unique `(ISO, zone_id)` zones mapped from `LONFR`/`LATFR` and `LONTO`/`LATTO`
-- **Migration Volume (`PrdMIG`):** Ranges from `2.19` to `85,431.00` (total across dataset: `~22,091,209.87`)
-- **Travel Distance (`dist_km`):** Ranges from `2.30 km` to `2,029.91 km`
-- **Flow Size Tiers (`size_tier`):**
-  - `Small (<250)`: 15,674 links
-  - `Medium (250-1k)`: 11,118 links
-  - `Large (1k-5k)`: 4,820 links
-  - `Mega (>5k)`: 504 links
+> **Status:** exploratory / educational. Movement probabilities and trip durations are modelling assumptions. They have **not** been calibrated or validated against observed outcomes. See [Limitations](#limitations).
 
-## Project Structure
+## What the model does
 
-- `migration_sim.nlogo` — NetLogo model containing the interface widgets and simulation code
-- `cleaned_migration_flows.csv` — Input dataset of cleaned migration flows and spatial attributes
-- `README.md` — Model documentation and setup guide
+- **Zones** (nodes) are the 971 geographical units; **links** are the 32,116 directed flows (`PrdMIG`), coloured by size tier: Small (<250), Medium (250–1k), Large (1k–5k), Mega (>5k).
+- **Agents** (`number-of-agents`, default 3,400) are placed on zones with probability proportional to each zone's total outflow.
+- **Each tick (≈ one simulated year)** a stationary agent may start a trip. The probability grows with the outflow of its current zone and is scaled by `migration-rate`.
+- **Destination choice:** proportional to the flow on each outgoing link.
+- **Trips** last 2–5 ticks, depending on distance, and move in a straight line. On arrival the agent settles in the destination zone.
+- The simulation runs for **10 ticks** and stops.
+
+## Interface
+
+| Widget | Purpose |
+|---|---|
+| `number-of-agents` (slider) | Number of simulated agents |
+| `migration-rate` (slider) | Multiplier on the per-tick probability of starting a trip |
+| `Setup` | Loads the CSV, builds zones/links, creates agents (do **not** set to *Forever*) |
+| `Go` | Runs the simulation (*Forever*), stops automatically at year 10 |
+| `show-all-countries` | Toggles all 32k links (slow to draw) |
+| `show-top-links` *(optional button)* | Shows only the 500 strongest links |
+| `network-summary` | Prints link counts and flow totals per tier |
+| `simulation-summary` | Prints movements and distances so far |
+| `Record Video` | Runs a full simulation and saves `africa_migration.mp4` next to the model (uses NetLogo's `vid` extension) |
+
+Plots (X axis = Year, 0–10): **Moving Agents**, **Migration Activity** (new trips per year), **Average Travel Distance** (km, trips started in that year).
+
+To focus on one country, run in the Command Center:
+
+```
+set-country "NGA"
+```
 
 ## Requirements
 
-- **NetLogo** (with the `csv` extension enabled; `extensions [ csv ]` is declared in the code)
-- Place `cleaned_migration_flows.csv` in the same directory as the `.nlogo` model file (or select it via the file dialog if prompted during `setup`)
+- **NetLogo 7.x** (model file: `africa_model.nlogo.nlogox`)
+- Extensions used (all bundled with NetLogo): `csv`, `table`, `rnd`, `vid`
+- `cleaned_migration_flows.csv` placed **next to the model file**, or in a `data/` folder (the model also looks one folder up and otherwise opens a file dialog)
 
-## Interface Controls & Plots
+## How to run
 
-- **Sliders:**
-  - `number-of-agents` — Number of migrant agents spawned at setup (default in UI: `3300`)
-  - `migration-rate` — Multiplier controlling movement probability per step (default in UI: `1.00`)
-- **Buttons:**
-  - `Setup` (`setup`) — Loads the CSV data, builds zones and links, spawns migrants, resets ticks, and updates plots
-  - `Go` (`go`) — Advances the simulation step by step (or continuously when **Forever** is enabled) up to `ticks >= 10`
-  - `simulation-summary` (`simulation-summary`) — Prints key simulation metrics to the Command Center
-  - `network-summary` (`network-summary`) — Prints link counts, flow sums by `size_tier`, and mean link distance
-  - `show-all-countries` (`show-all-countries`) — Toggles visibility of migration flow links in the view
-- **Plots (X-axis `Year` from `0` to `10`):**
-  - `Moving Agents` — Tracks agents currently in motion (`count migrants with [ moving? ]`)
-  - `Migration Activity` — Tracks movements initiated in the current step (`last-step-movements`)
-  - `Average Travel Distance` — Tracks mean trip distance (`dist_km`) for movements started in the current step (`last-step-distance`)
+1. Open `africa_model.nlogo.nlogox` in NetLogo.
+2. Make sure the CSV is in the same folder (or in `data/`).
+3. Press **Setup**, then **Go**.
 
-## Optional Country Filtering via Command Center
+## Data
 
-By default, the model simulates all countries (`active-iso = "ALL"`). To filter by a specific ISO country code from the Command Center:
+`cleaned_migration_flows.csv` columns used: `ISO`, `origin_id`, `dest_id`, `LONFR`, `LATFR`, `LONTO`, `LATTO`, `PrdMIG`, `dist_km`, `ref_population`, `mig_rate_per_1k`, `size_tier`.
 
-```netlogo
-set-country "NGA"
+- 32,116 directed flows, 46 countries, 971 zones
+- `PrdMIG` ranges from about 2 to 85,431 per flow
+- `dist_km` ranges from about 2 km to 2,030 km
+
+**Source and license:** TODO – add the original data source, citation and license here before publishing.
+
+## Limitations
+
+- Flows are fixed: there is no feedback such as congestion, employment or capacity.
+- Agents have no memory, never return home and do not interact.
+- A tick is treated as one year, and trip durations of 2–5 ticks are design choices, not estimates from the data.
+- All agents start stationary, so the first years show a **warm-up** peak in activity before the system settles. This comes from the model's initial conditions, not from real migration behaviour.
+- Choosing destinations in proportion to flow favours high-volume corridors, so average simulated trips are not the same as the average corridor in the data.
+- Results depend on random draws; no fixed seed is set yet.
+
+## Roadmap
+
+- Add `random-seed` for reproducible runs
+- Calibrate movement probabilities against observed data and validate the results
+- Add return migration and capacity or attractiveness effects
+
+## License
+
+Code: add a license (e.g. MIT). Data: see the data section above.
